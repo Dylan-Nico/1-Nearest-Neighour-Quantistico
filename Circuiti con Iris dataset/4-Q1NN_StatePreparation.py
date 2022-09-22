@@ -70,7 +70,7 @@ data = pd.concat([setosa,versicolor,virginica])
 
 
 # random_seed : int : Random number generator seed
-random_seed = 2
+random_seed = 3
 rgen = np.random.RandomState(random_seed)
 def _shuffle(self, X, y):
     """Shuffle training data"""
@@ -132,6 +132,7 @@ c4= ClassicalRegister(2,"c4") #for measure q0q1 indexes
 
 risultati = []
 ground_truth = []
+sub = []
 for v in data.index:
     p = 0
     print("Indice for loop:",v)
@@ -144,6 +145,7 @@ for v in data.index:
     while not data.empty:
         #estrazione del sottoinsieme
         subset = data.iloc[:4]
+        sub.append(subset)
         data = data.drop(subset.index)
         print("Circuito:",p)
         print(subset)
@@ -189,7 +191,39 @@ for v in data.index:
     data = data_copy #ripristino il dataset prima della prossima iterazione
 
 
-# In[16]:
+# In[ ]:
+
+
+tmp = []
+total = [] #total[i] conterrà le stringhe degli output corretti dell'i-esimo training set 
+N = int(math.log(len(subset),2))
+print(N)
+for x in sub:
+    tr = x
+    for y in range(len(tr)):
+        getBinary = lambda x, n: format(x, 'b').zfill(n)
+        f = tr.iloc[y]
+        if(f["class"] == "Iris-setosa"):
+            tmp.append('00 ' + getBinary(y,N) + ' 0')
+        if(f["class"] == "Iris-versicolor"):
+            tmp.append('01 ' + getBinary(y,N) + ' 0')
+        if(f["class"] == "Iris-virginica"):
+            tmp.append('10 ' + getBinary(y,N) + ' 0')
+    total.append(tmp)
+    tmp = []
+    
+#-----post-selection required!------
+#extract predictions
+for k in range(len(risultati)):
+    tmp2 = risultati[k]
+    goodCounts = {k: tmp2[k] for k in tmp2.keys() & total[k]}
+    predict = max(goodCounts, key=goodCounts.get)
+    predict = str(predict)
+    print("Circuito:",k,"Classe predetta:",int(predict[:2],2))
+    #prediction.append(int(predict[:2],2))
+
+
+# In[ ]:
 
 
 #profondità e dimensione
@@ -205,86 +239,4 @@ transpile_circuit = transpile(circuit[0], backend)
 print(transpile_circuit.depth())
 print(transpile_circuit.size())
 '''
-
-
-# In[ ]:
-
-
-#post-selection required
-tmp = risultati[15]
-goodCounts = {k: tmp[k] for k in tmp.keys() & {'10 00 0', '01 01 0', '00 10 0', '01 11 0'}}
-plot_histogram(goodCounts)
-
-
-# In[ ]:
-
-
-len_risultati = len(risultati)
-final = []
-for w in range(len_risultati):
-    goodResult = risultati[w]
-    
-    #ordino le configurazioni
-    sort_counts = sorted(goodResult.items())
-    m = len(sort_counts)
-
-    #lascio "libera" la classe
-    goodValues = []
-    for k in range(m):
-        value = sort_counts[k][0]
-        if(value[6] == '1' and value[7] == '1'):
-            goodValues.append(sort_counts[k])
-
-    #converto in dizionario per il plot
-    goodValues = dict((k, y) for k, y in goodValues) 
-    final.append(goodValues)
-
-
-# In[ ]:
-
-
-#plot_histogram(final[18])
-
-
-# In[ ]:
-
-
-#estraggo il valore più alto per ognuno degli istogrammi 
-prediction = []
-lunghezza_final = len(final)
-for i in range(lunghezza_final):
-    predict = max(final[i], key=final[i].get)
-    predict = str(predict)
-    print("Circuito:",i,"Classe predetta:",int(predict[:2],2))
-    prediction.append(int(predict[:2],2))
-
-
-# In[ ]:
-
-
-
-fields = ['#Vectors', 'Predition', 'Ground truth']
-filename = "1nnFourTrINIT_records.csv"
-with open(filename, 'w') as csvfile: 
-    # creating a csv writer object 
-    csvwriter = csv.writer(csvfile)
-    
-    # writing the fields 
-    csvwriter.writerow(fields)
-    
-    j = 0
-    for i in range(len(ground_truth)):
-        while j < len(prediction): 
-            row = [['4',prediction[j],ground_truth[i]]]
-            csvwriter.writerows(row)
-            j+=1
-            if ((j%32) == 0):
-                break
-            
-
-
-# In[ ]:
-
-
-
 
